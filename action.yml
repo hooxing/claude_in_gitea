@@ -1,0 +1,212 @@
+﻿name: "Claude Code Gitea Action"
+description: "Gitea automation platform with Claude. Auto-detects mode based on event type and prompt."
+inputs:
+  trigger_phrase:
+    description: "Trigger phrase to look for in comments or issue body"
+    required: false
+    default: "@claude"
+  assignee_trigger:
+    description: "Assignee username that triggers the action"
+    required: false
+  label_trigger:
+    description: "Label that triggers the action"
+    required: false
+    default: "claude"
+  base_branch:
+    description: "Base branch when creating new branches"
+    required: false
+  branch_prefix:
+    description: "Prefix for Claude branches"
+    required: false
+    default: "claude/"
+  branch_name_template:
+    description: "Template for branch naming"
+    required: false
+    default: ""
+  allowed_bots:
+    description: "Allowed bot usernames, or '*' to allow all"
+    required: false
+    default: ""
+  allowed_non_write_users:
+    description: "Allowed users without write permission (only when gitea_token provided)"
+    required: false
+    default: ""
+  include_comments_by_actor:
+    description: "Comma-separated actors to include"
+    required: false
+    default: ""
+  exclude_comments_by_actor:
+    description: "Comma-separated actors to exclude"
+    required: false
+    default: ""
+
+  prompt:
+    description: "Instructions for Claude"
+    required: false
+    default: ""
+  settings:
+    description: "Claude Code settings JSON"
+    required: false
+    default: ""
+
+  anthropic_api_key:
+    description: "Anthropic API key"
+    required: false
+  claude_code_oauth_token:
+    description: "Claude Code OAuth token"
+    required: false
+
+  gitea_token:
+    description: "Gitea token with repo permissions"
+    required: false
+  github_token:
+    description: "Legacy alias (optional)"
+    required: false
+
+  claude_args:
+    description: "Additional Claude CLI args"
+    required: false
+    default: ""
+  use_sticky_comment:
+    description: "Use a single tracking comment"
+    required: false
+    default: "false"
+  use_commit_signing:
+    description: "Enable API-based commit signing (uses MCP file ops)"
+    required: false
+    default: "false"
+  ssh_signing_key:
+    description: "SSH private key for commit signing"
+    required: false
+    default: ""
+  bot_id:
+    description: "Bot user ID"
+    required: false
+    default: "0"
+  bot_name:
+    description: "Bot username"
+    required: false
+    default: "claude-bot"
+  track_progress:
+    description: "Force tag mode with tracking comments"
+    required: false
+    default: "false"
+  include_fix_links:
+    description: "Include fix links in review feedback"
+    required: false
+    default: "true"
+  path_to_claude_code_executable:
+    description: "Optional custom Claude Code executable"
+    required: false
+    default: ""
+  path_to_bun_executable:
+    description: "Optional custom Bun executable"
+    required: false
+    default: ""
+  display_report:
+    description: "Display report in step summary"
+    required: false
+    default: "false"
+  show_full_output:
+    description: "Show full JSON output from Claude Code"
+    required: false
+    default: "false"
+  plugins:
+    description: "Newline-separated list of plugins"
+    required: false
+    default: ""
+  plugin_marketplaces:
+    description: "Newline-separated list of plugin marketplaces"
+    required: false
+    default: ""
+
+outputs:
+  execution_file:
+    description: "Path to the Claude Code execution output file"
+    value: ${{ steps.run.outputs.execution_file }}
+  branch_name:
+    description: "The branch created by Claude Code for this execution"
+    value: ${{ steps.run.outputs.branch_name }}
+  gitea_token:
+    description: "The Gitea token used by the action"
+    value: ${{ steps.run.outputs.gitea_token }}
+  structured_output:
+    description: "Structured output JSON"
+    value: ${{ steps.run.outputs.structured_output }}
+  session_id:
+    description: "Claude Code session ID"
+    value: ${{ steps.run.outputs.session_id }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Bun
+      if: inputs.path_to_bun_executable == ''
+      uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3
+      with:
+        bun-version: 1.3.6
+
+    - name: Setup Custom Bun Path
+      if: inputs.path_to_bun_executable != ''
+      shell: bash
+      env:
+        PATH_TO_BUN_EXECUTABLE: ${{ inputs.path_to_bun_executable }}
+      run: |
+        echo "Using custom Bun executable: $PATH_TO_BUN_EXECUTABLE"
+        BUN_DIR=$(dirname "$PATH_TO_BUN_EXECUTABLE")
+        PATH_FILE="${GITEA_PATH:-$GITHUB_PATH}"
+        echo "$BUN_DIR" >> "$PATH_FILE"
+
+    - name: Install Dependencies
+      shell: bash
+      run: |
+        ACTION_PATH="${GITEA_ACTION_PATH:-$GITHUB_ACTION_PATH}"
+        cd "$ACTION_PATH"
+        bun install --production
+
+    - name: Run Claude Code Gitea Action
+      id: run
+      shell: bash
+      run: |
+        ACTION_PATH="${GITEA_ACTION_PATH:-$GITHUB_ACTION_PATH}"
+        bun run "$ACTION_PATH/src/entrypoints/run.ts"
+      env:
+        GITEA_ACTION_PATH: ${{ github.action_path }}
+        GITEA_WORKSPACE: ${{ github.workspace }}
+        GITEA_SERVER_URL: ${{ env.GITEA_SERVER_URL || github.server_url }}
+        GITEA_API_URL: ${{ env.GITEA_API_URL || format('{0}/api/v1', env.GITEA_SERVER_URL || github.server_url) }}
+        PROMPT: ${{ inputs.prompt }}
+        TRIGGER_PHRASE: ${{ inputs.trigger_phrase }}
+        ASSIGNEE_TRIGGER: ${{ inputs.assignee_trigger }}
+        LABEL_TRIGGER: ${{ inputs.label_trigger }}
+        BASE_BRANCH: ${{ inputs.base_branch }}
+        BRANCH_PREFIX: ${{ inputs.branch_prefix }}
+        BRANCH_NAME_TEMPLATE: ${{ inputs.branch_name_template }}
+        OVERRIDE_GITEA_TOKEN: ${{ inputs.gitea_token || inputs.github_token }}
+        ALLOWED_BOTS: ${{ inputs.allowed_bots }}
+        ALLOWED_NON_WRITE_USERS: ${{ inputs.allowed_non_write_users }}
+        INCLUDE_COMMENTS_BY_ACTOR: ${{ inputs.include_comments_by_actor }}
+        EXCLUDE_COMMENTS_BY_ACTOR: ${{ inputs.exclude_comments_by_actor }}
+        GITEA_RUN_ID: ${{ env.GITEA_RUN_ID || github.run_id }}
+        USE_STICKY_COMMENT: ${{ inputs.use_sticky_comment }}
+        USE_COMMIT_SIGNING: ${{ inputs.use_commit_signing }}
+        SSH_SIGNING_KEY: ${{ inputs.ssh_signing_key }}
+        BOT_ID: ${{ inputs.bot_id }}
+        BOT_NAME: ${{ inputs.bot_name }}
+        TRACK_PROGRESS: ${{ inputs.track_progress }}
+        INCLUDE_FIX_LINKS: ${{ inputs.include_fix_links }}
+        CLAUDE_ARGS: ${{ inputs.claude_args }}
+        ALL_INPUTS: ${{ toJson(inputs) }}
+
+        INPUT_PROMPT_FILE: ${{ runner.temp }}/claude-prompts/claude-prompt.txt
+        INPUT_SETTINGS: ${{ inputs.settings }}
+        INPUT_PATH_TO_CLAUDE_CODE_EXECUTABLE: ${{ inputs.path_to_claude_code_executable }}
+        INPUT_PATH_TO_BUN_EXECUTABLE: ${{ inputs.path_to_bun_executable }}
+        INPUT_SHOW_FULL_OUTPUT: ${{ inputs.show_full_output }}
+        DISPLAY_REPORT: ${{ inputs.display_report }}
+        INPUT_PLUGINS: ${{ inputs.plugins }}
+        INPUT_PLUGIN_MARKETPLACES: ${{ inputs.plugin_marketplaces }}
+        PATH_TO_CLAUDE_CODE_EXECUTABLE: ${{ inputs.path_to_claude_code_executable }}
+
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        CLAUDE_CODE_OAUTH_TOKEN: ${{ inputs.claude_code_oauth_token }}

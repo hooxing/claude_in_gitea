@@ -1,0 +1,15 @@
+name: Claude Code Action Self Test
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Claude Code Action (local)
+        uses: ./
+        with:
+          gitea_token: ${{ secrets.GITEATOKEN }}
+          trigger_phrase: "@claude"
+          track_progress: "true"
