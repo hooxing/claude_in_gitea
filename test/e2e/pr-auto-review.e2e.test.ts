@@ -94,8 +94,12 @@ async function pollForComment(
   throw new Error("Timed out waiting for review comment");
 }
 
+const testTimeoutMs = timeoutMs + 30000;
+
 describe("E2E: PR auto review", () => {
-  run("creates review comment for PR opened", async () => {
+  run(
+    "creates review comment for PR opened",
+    async () => {
     if (!baseUrl || !token || !repo) {
       throw new Error(
         "Missing required env: GITEA_BASE_URL/GITEA_SERVER_URL, GITEA_TOKEN, GITEA_REPO",
@@ -189,5 +193,7 @@ describe("E2E: PR auto review", () => {
 
       await rm(tmpDir, { recursive: true, force: true });
     }
-  });
+    },
+    testTimeoutMs,
+  );
 });
