@@ -77,6 +77,40 @@ describe("checkContainsTrigger (Gitea)", () => {
     expect(checkContainsTrigger(context)).toBe(true);
   });
 
+  test("pull_request 评论包含触发词", () => {
+    const context = createMockContext({
+      eventName: "issue_comment",
+      eventAction: "created",
+      isPR: true,
+      payload: {
+        action: "created",
+        comment: { id: 1, body: "@claude review this PR", user: { login: "user" } },
+        issue: { number: 1, title: "", body: "", pull_request: {} },
+        repository: baseRepo,
+      } as any,
+      inputs: { triggerPhrase: "@claude" } as any,
+    });
+
+    expect(checkContainsTrigger(context)).toBe(true);
+  });
+
+  test("prompt 提供时自动触发", () => {
+    const context = createMockContext({
+      eventName: "pull_request",
+      eventAction: "opened",
+      isPR: true,
+      payload: {
+        action: "opened",
+        number: 1,
+        pull_request: { number: 1, title: "", body: "", head: { ref: "x" }, base: { ref: "main" } },
+        repository: baseRepo,
+      } as any,
+      inputs: { prompt: "请自动审阅这个 PR" } as any,
+    });
+
+    expect(checkContainsTrigger(context)).toBe(true);
+  });
+
   test("pull_request body 触发", () => {
     const context = createMockContext({
       eventName: "pull_request",
