@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test";
+import { mkdir, rm, writeFile } from "fs/promises";
 import {
   extractTriggerTimestamp,
   extractOriginalTitle,
@@ -132,6 +133,9 @@ describe("fetchGiteaData", () => {
   });
 
   test("fetch PR data with reviews", async () => {
+    await mkdir("src", { recursive: true });
+    await writeFile("src/a.ts", "export const a = 1;\n");
+
     const responses = {
       "/repos/owner/repo/pulls/2": {
         number: 2,
@@ -158,13 +162,18 @@ describe("fetchGiteaData", () => {
       "/users/alice": { full_name: "Alice" },
     };
 
-    const result = await fetchGiteaData({
-      client: createClient(responses),
-      repository: "owner/repo",
-      prNumber: "2",
-      isPR: true,
-      triggerUsername: "alice",
-    });
+    let result;
+    try {
+      result = await fetchGiteaData({
+        client: createClient(responses),
+        repository: "owner/repo",
+        prNumber: "2",
+        isPR: true,
+        triggerUsername: "alice",
+      });
+    } finally {
+      await rm("src/a.ts", { force: true });
+    }
 
     expect(result.contextData.title).toBe("PR title");
     expect(result.changedFiles).toHaveLength(1);
