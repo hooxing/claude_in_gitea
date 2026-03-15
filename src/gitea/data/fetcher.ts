@@ -23,6 +23,27 @@ import {
   shouldIncludeCommentByActor,
 } from "../utils/actor-filter";
 
+const DEFAULT_PAGE_LIMIT = parsePositiveInt(
+  process.env.GITEA_PAGINATION_LIMIT,
+  50,
+);
+const DEFAULT_MAX_PAGES = parsePositiveInt(
+  process.env.GITEA_PAGINATION_MAX_PAGES,
+  10,
+);
+
+function parsePositiveInt(
+  value: string | undefined,
+  fallback: number,
+): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed;
+  }
+  return fallback;
+}
+
 export function extractTriggerTimestamp(
   context: ParsedGiteaContext,
 ): string | undefined {
@@ -189,8 +210,8 @@ export type FetchDataResult = {
 
 async function paginate<T>(
   fetchPage: (page: number, limit: number) => Promise<T[]>,
-  limit = 50,
-  maxPages = 10,
+  limit = DEFAULT_PAGE_LIMIT,
+  maxPages = DEFAULT_MAX_PAGES,
 ): Promise<T[]> {
   const results: T[] = [];
   for (let page = 1; page <= maxPages; page++) {
