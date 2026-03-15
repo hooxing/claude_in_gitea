@@ -5,7 +5,9 @@ import {
   configureGitAuth,
   setupSshSigning,
 } from "../../gitea/operations/git-config";
+import { createInitialComment } from "../../gitea/operations/comments/create-initial";
 import { checkHumanActor } from "../../gitea/validation/actor";
+import { isEntityContext } from "../../gitea/context";
 import type { GiteaContext } from "../../gitea/context";
 import type { GiteaClient } from "../../gitea/api/client";
 
@@ -61,7 +63,18 @@ export async function prepareAgentMode({
   );
 
   const userClaudeArgs = process.env.CLAUDE_ARGS || "";
-  const allowedTools = parseAllowedTools(userClaudeArgs);
+  const userAllowedTools = parseAllowedTools(userClaudeArgs);
+
+  let commentId: number | undefined;
+  if (isEntityContext(context)) {
+    const comment = await createInitialComment(client, context);
+    commentId = comment?.id;
+  }
+
+  const allowedTools = new Set(userAllowedTools);
+  if (commentId) {
+    allowedTools.add("mcp__gitea_comment__update_claude_comment");
+  }
 
   const claudeBranch = process.env.CLAUDE_BRANCH || undefined;
   const baseBranch =
@@ -81,8 +94,8 @@ export async function prepareAgentMode({
     repo: context.repository.repo,
     branch: currentBranch,
     baseBranch: baseBranch,
-    claudeCommentId: undefined,
-    allowedTools,
+    claudeCommentId: commentId ? String(commentId) : undefined,
+    allowedTools: Array.from(allowedTools),
     mode: "agent",
     context,
   });
@@ -94,10 +107,15 @@ export async function prepareAgentMode({
     claudeArgs = `--mcp-config '${escapedOurConfig}'`;
   }
 
+  const allowedToolsList = Array.from(allowedTools);
+  if (allowedToolsList.length > 0) {
+    claudeArgs = `${claudeArgs} --allowedTools "${allowedToolsList.join(",")}"`;
+  }
+
   claudeArgs = `${claudeArgs} ${userClaudeArgs}`.trim();
 
   return {
-    commentId: undefined,
+    commentId,
     branchInfo: {
       baseBranch: baseBranch,
       currentBranch: baseBranch,
