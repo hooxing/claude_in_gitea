@@ -7,6 +7,7 @@ import type { GiteaPullRequest, GiteaRepo, GiteaBranch } from "../types";
 import type { GiteaClient } from "../api/client";
 import type { FetchDataResult } from "../data/fetcher";
 import { generateBranchName } from "../../utils/branch-template";
+import * as core from "../../utils/action-io";
 
 function extractFirstLabel(giteaData: FetchDataResult): string | undefined {
   const labels = (giteaData.contextData as any).labels;
@@ -90,11 +91,11 @@ export async function setupBranch(
     const prState = prData.state;
 
     if (prState === "closed" || prData.merged) {
-      console.log(
+      core.info(
         `PR #${entityNumber} is closed or merged, creating new branch from base...`,
       );
     } else {
-      console.log("This is an open PR, checking out PR branch...");
+      core.info("This is an open PR, checking out PR branch...");
       const branchName = prData.head.ref;
       validateBranchName(branchName);
 
@@ -125,7 +126,7 @@ export async function setupBranch(
     );
     sourceSHA = branchInfo.commit.id;
   } catch (error) {
-    console.warn("Failed to fetch branch SHA from API, continuing without SHA");
+    core.warning("Failed to fetch branch SHA from API, continuing without SHA");
   }
 
   const firstLabel = extractFirstLabel(giteaData);
@@ -143,7 +144,7 @@ export async function setupBranch(
 
   try {
     await $`git ls-remote --exit-code origin refs/heads/${newBranch}`.quiet();
-    console.log(
+    core.info(
       `Branch '${newBranch}' already exists, falling back to default format`,
     );
     newBranch = generateBranchName(
@@ -160,7 +161,7 @@ export async function setupBranch(
   }
 
   if (context.inputs.useCommitSigning) {
-    console.log(
+    core.info(
       `Branch name generated: ${newBranch} (will be created by file ops server on first commit)`,
     );
 
@@ -175,7 +176,7 @@ export async function setupBranch(
     };
   }
 
-  console.log(
+  core.info(
     `Creating local branch ${newBranch} from source branch: ${sourceBranch}...`,
   );
 

@@ -7,7 +7,7 @@
 import { createJobRunLink, createCommentBody } from "./common";
 import { type ParsedGiteaContext } from "../../context";
 import type { GiteaClient } from "../../api/client";
-import { setOutput } from "../../../utils/action-io";
+import { setOutput, info, warning } from "../../../utils/action-io";
 
 export async function createInitialComment(
   client: GiteaClient,
@@ -59,10 +59,10 @@ export async function createInitialComment(
     }
 
     setOutput("claude_comment_id", String(response.id));
-    console.log(`Created initial comment with ID: ${response.id}`);
+    info(`Created initial comment with ID: ${response.id}`);
     return response;
   } catch (error) {
-    console.error("Error in initial comment:", error);
+    warning(`Error in initial comment: ${error}`);
     throw error;
   }
 }

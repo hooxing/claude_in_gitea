@@ -1,5 +1,6 @@
 ﻿import { readFileSync } from "fs";
 import { CLAUDE_APP_BOT_ID, CLAUDE_BOT_LOGIN } from "./constants";
+import { validateActionInputs } from "./validation/inputs";
 
 // Custom types for automation-like events
 export type WorkflowDispatchEvent = {
@@ -292,32 +293,36 @@ export function parseGiteaContext(): GiteaContext {
     process.env.GITHUB_ACTOR ||
     "";
 
+  const rawInputs = {
+    prompt: process.env.PROMPT || "",
+    triggerPhrase: process.env.TRIGGER_PHRASE ?? "@claude",
+    assigneeTrigger: process.env.ASSIGNEE_TRIGGER ?? "",
+    labelTrigger: process.env.LABEL_TRIGGER ?? "",
+    baseBranch: process.env.BASE_BRANCH,
+    branchPrefix: process.env.BRANCH_PREFIX ?? "claude/",
+    branchNameTemplate: process.env.BRANCH_NAME_TEMPLATE,
+    useStickyComment: process.env.USE_STICKY_COMMENT === "true",
+    useCommitSigning: process.env.USE_COMMIT_SIGNING === "true",
+    sshSigningKey: process.env.SSH_SIGNING_KEY || "",
+    botId: process.env.BOT_ID ?? String(CLAUDE_APP_BOT_ID),
+    botName: process.env.BOT_NAME ?? CLAUDE_BOT_LOGIN,
+    allowedBots: process.env.ALLOWED_BOTS ?? "",
+    allowedNonWriteUsers: process.env.ALLOWED_NON_WRITE_USERS ?? "",
+    trackProgress: process.env.TRACK_PROGRESS === "true",
+    includeFixLinks: process.env.INCLUDE_FIX_LINKS === "true",
+    includeCommentsByActor: process.env.INCLUDE_COMMENTS_BY_ACTOR ?? "",
+    excludeCommentsByActor: process.env.EXCLUDE_COMMENTS_BY_ACTOR ?? "",
+  };
+
+  const validatedInputs = validateActionInputs(rawInputs);
+
   const commonFields: BaseContext = {
     runId:
       process.env.GITEA_RUN_ID || process.env.GITHUB_RUN_ID || "unknown",
     eventAction: payload?.action,
     repository,
     actor,
-    inputs: {
-      prompt: process.env.PROMPT || "",
-      triggerPhrase: process.env.TRIGGER_PHRASE ?? "@claude",
-      assigneeTrigger: process.env.ASSIGNEE_TRIGGER ?? "",
-      labelTrigger: process.env.LABEL_TRIGGER ?? "",
-      baseBranch: process.env.BASE_BRANCH,
-      branchPrefix: process.env.BRANCH_PREFIX ?? "claude/",
-      branchNameTemplate: process.env.BRANCH_NAME_TEMPLATE,
-      useStickyComment: process.env.USE_STICKY_COMMENT === "true",
-      useCommitSigning: process.env.USE_COMMIT_SIGNING === "true",
-      sshSigningKey: process.env.SSH_SIGNING_KEY || "",
-      botId: process.env.BOT_ID ?? String(CLAUDE_APP_BOT_ID),
-      botName: process.env.BOT_NAME ?? CLAUDE_BOT_LOGIN,
-      allowedBots: process.env.ALLOWED_BOTS ?? "",
-      allowedNonWriteUsers: process.env.ALLOWED_NON_WRITE_USERS ?? "",
-      trackProgress: process.env.TRACK_PROGRESS === "true",
-      includeFixLinks: process.env.INCLUDE_FIX_LINKS === "true",
-      includeCommentsByActor: process.env.INCLUDE_COMMENTS_BY_ACTOR ?? "",
-      excludeCommentsByActor: process.env.EXCLUDE_COMMENTS_BY_ACTOR ?? "",
-    },
+    inputs: validatedInputs,
   };
 
   switch (eventName) {

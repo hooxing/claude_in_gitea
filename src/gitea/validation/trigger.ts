@@ -17,7 +17,7 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
   } = context;
 
   if (prompt) {
-    console.log("Prompt provided, triggering action");
+    core.info("Prompt provided, triggering action");
     return true;
   }
 
@@ -26,7 +26,7 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
     const assigneeUsername =
       (context.payload as any).issue?.assignee?.login || "";
     if (triggerUser && assigneeUsername === triggerUser) {
-      console.log(`Issue assigned to trigger user '${triggerUser}'`);
+      core.info(`Issue assigned to trigger user '${triggerUser}'`);
       return true;
     }
   }
@@ -34,7 +34,7 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
   if (isIssuesEvent(context) && context.eventAction === "labeled") {
     const labelName = (context.payload as any).label?.name || "";
     if (labelTrigger && labelName === labelTrigger) {
-      console.log(`Issue labeled with trigger label '${labelTrigger}'`);
+      core.info(`Issue labeled with trigger label '${labelTrigger}'`);
       return true;
     }
   }
@@ -46,11 +46,11 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
       `(^|\\s)${escapeRegExp(triggerPhrase)}([\\s.,!?;:]|$)`,
     );
     if (regex.test(issueBody)) {
-      console.log(`Issue body contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(`Issue body contains exact trigger phrase '${triggerPhrase}'`);
       return true;
     }
     if (regex.test(issueTitle)) {
-      console.log(`Issue title contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(`Issue title contains exact trigger phrase '${triggerPhrase}'`);
       return true;
     }
   }
@@ -62,11 +62,11 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
       `(^|\\s)${escapeRegExp(triggerPhrase)}([\\s.,!?;:]|$)`,
     );
     if (regex.test(prBody)) {
-      console.log(`Pull request body contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(`Pull request body contains exact trigger phrase '${triggerPhrase}'`);
       return true;
     }
     if (regex.test(prTitle)) {
-      console.log(`Pull request title contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(`Pull request title contains exact trigger phrase '${triggerPhrase}'`);
       return true;
     }
   }
@@ -80,7 +80,7 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
       `(^|\\s)${escapeRegExp(triggerPhrase)}([\\s.,!?;:]|$)`,
     );
     if (regex.test(reviewBody)) {
-      console.log(`Pull request review contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(`Pull request review contains exact trigger phrase '${triggerPhrase}'`);
       return true;
     }
   }
@@ -94,12 +94,12 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
       `(^|\\s)${escapeRegExp(triggerPhrase)}([\\s.,!?;:]|$)`,
     );
     if (regex.test(commentBody)) {
-      console.log(`Comment contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(`Comment contains exact trigger phrase '${triggerPhrase}'`);
       return true;
     }
   }
 
-  console.log(`No trigger was met for ${triggerPhrase}`);
+  core.info(`No trigger was met for ${triggerPhrase}`);
   return false;
 }
 

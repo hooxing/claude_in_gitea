@@ -12,6 +12,7 @@ import {
 import type { GiteaClient } from "../../api/client";
 import { type ParsedGiteaContext } from "../../context";
 import { updateClaudeComment } from "./update-claude-comment";
+import { info, warning } from "../../../utils/action-io";
 
 export async function updateTrackingComment(
   client: GiteaClient,
@@ -38,9 +39,9 @@ export async function updateTrackingComment(
       isPullRequestReviewComment: false,
     });
 
-    console.log(`Updated comment ${commentId} with branch link`);
+    info(`Updated comment ${commentId} with branch link`);
   } catch (error) {
-    console.error("Error updating comment with branch link:", error);
+    warning(`Error updating comment with branch link: ${error}`);
     throw error;
   }
 }

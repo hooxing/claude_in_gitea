@@ -1,5 +1,6 @@
 ﻿#!/usr/bin/env bun
 
+import * as core from "../../utils/action-io";
 import type { GiteaClient } from "../api/client";
 import type { GiteaContext } from "../context";
 
@@ -11,7 +12,7 @@ export async function checkHumanActor(
   const allowedBots = giteaContext.inputs.allowedBots;
 
   if (allowedBots.trim() === "*") {
-    console.log(
+    core.info(
       `All bots are allowed, skipping human actor check for: ${actor}`,
     );
     return;
@@ -30,7 +31,7 @@ export async function checkHumanActor(
   } catch {
     // If we can't fetch user info, fall back to allowlist check only
     if (allowedBotsList.includes(actor.toLowerCase())) {
-      console.log(`Bot ${actor} is in allowed list, skipping human actor check`);
+      core.info(`Bot ${actor} is in allowed list, skipping human actor check`);
       return;
     }
     if (actor.toLowerCase().includes("bot")) {
@@ -50,5 +51,5 @@ export async function checkHumanActor(
     );
   }
 
-  console.log(`Verified actor: ${actor}`);
+  core.info(`Verified actor: ${actor}`);
 }

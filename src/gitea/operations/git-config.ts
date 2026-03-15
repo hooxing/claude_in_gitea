@@ -10,6 +10,7 @@ import { join } from "path";
 import { homedir } from "os";
 import type { GiteaContext } from "../context";
 import { GITEA_SERVER_URL } from "../api/config";
+import * as core from "../../utils/action-io";
 
 const SSH_SIGNING_KEY_PATH = join(homedir(), ".ssh", "claude_signing_key");
 
@@ -23,7 +24,7 @@ export async function configureGitAuth(
   context: GiteaContext,
   user: GitUser,
 ) {
-  console.log("Configuring git authentication for Gitea...");
+  core.info("Configuring git authentication for Gitea...");
 
   const serverUrl = new URL(GITEA_SERVER_URL);
   const noreplyDomain = serverUrl.hostname;

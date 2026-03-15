@@ -1,4 +1,6 @@
-﻿export type RetryOptions = {
+﻿import * as core from "./action-io";
+
+export type RetryOptions = {
   maxAttempts?: number;
   initialDelayMs?: number;
   maxDelayMs?: number;
@@ -21,21 +23,23 @@ export async function retryWithBackoff<T>(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`Attempt ${attempt} of ${maxAttempts}...`);
+      core.debug(`Attempt ${attempt} of ${maxAttempts}...`);
       return await operation();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`Attempt ${attempt} failed:`, lastError.message);
+      core.warning(`Attempt ${attempt} failed: ${lastError.message}`);
 
       if (attempt < maxAttempts) {
-        console.log(`Retrying in ${delayMs / 1000} seconds...`);
+        core.info(`Retrying in ${delayMs / 1000} seconds...`);
         await new Promise((resolve) => setTimeout(resolve, delayMs));
         delayMs = Math.min(delayMs * backoffFactor, maxDelayMs);
       }
     }
   }
 
-  console.error(`Operation failed after ${maxAttempts} attempts`);
-  throw lastError;
+  // lastError is always defined here because the loop runs at least once
+  // and every catch block assigns it.  The fallback keeps TypeScript happy
+  // since it cannot prove that invariant statically.
+  throw lastError ?? new Error(`Operation failed after ${maxAttempts} attempts`);
 }
 
