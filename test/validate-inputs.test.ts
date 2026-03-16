@@ -66,7 +66,11 @@ describe("validateActionInputs", () => {
   test("error message lists all failures at once", () => {
     let error: Error | undefined;
     try {
-      validateActionInputs({ ...validInputs, triggerPhrase: "", botName: "" });
+      validateActionInputs({
+        ...validInputs,
+        triggerPhrase: "a".repeat(101),
+        botName: "",
+      });
     } catch (e) {
       error = e as Error;
     }
