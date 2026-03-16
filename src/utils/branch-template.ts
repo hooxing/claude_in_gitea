@@ -4,6 +4,8 @@
  * Branch name template parsing and variable substitution utilities
  */
 
+import * as core from "./action-io";
+
 const NUM_DESCRIPTION_WORDS = 5;
 
 /**
@@ -88,7 +90,7 @@ export function generateBranchName(
     // Some templates could produce empty results- validate
     if (branchName.trim().length > 0) return branchName;
 
-    console.log(
+    core.info(
       `Branch template '${template}' generated empty result, falling back to default format`,
     );
   }

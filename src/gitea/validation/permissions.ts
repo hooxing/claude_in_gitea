@@ -1,5 +1,6 @@
 ﻿import type { ParsedGiteaContext } from "../context";
 import type { GiteaClient } from "../api/client";
+import * as core from "../../utils/action-io";
 
 /**
  * Check if the actor has write permissions to the repository
@@ -16,7 +17,7 @@ export async function checkWritePermissions(
   if (allowedNonWriteUsers && giteaTokenProvided) {
     const allowedUsers = allowedNonWriteUsers.trim();
     if (allowedUsers === "*") {
-      console.warn(
+      core.warning(
         `SECURITY WARNING: Bypassing write permission check for ${actor} due to allowed_non_write_users='*'.`,
       );
       return true;
@@ -27,7 +28,7 @@ export async function checkWritePermissions(
         .map((u) => u.trim())
         .filter((u) => u.length > 0);
       if (allowedUserList.includes(actor)) {
-        console.warn(
+        core.warning(
           `SECURITY WARNING: Bypassing write permission check for ${actor} due to allowed_non_write_users configuration.`,
         );
         return true;

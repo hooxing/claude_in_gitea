@@ -22,6 +22,7 @@ import {
   parseActorFilter,
   shouldIncludeCommentByActor,
 } from "../utils/actor-filter";
+import * as core from "../../utils/action-io";
 
 const DEFAULT_PAGE_LIMIT = parsePositiveInt(
   process.env.GITEA_PAGINATION_LIMIT,
@@ -212,12 +213,21 @@ async function paginate<T>(
   fetchPage: (page: number, limit: number) => Promise<T[]>,
   limit = DEFAULT_PAGE_LIMIT,
   maxPages = DEFAULT_MAX_PAGES,
+  resourceLabel?: string,
 ): Promise<T[]> {
   const results: T[] = [];
   for (let page = 1; page <= maxPages; page++) {
     const data = await fetchPage(page, limit);
     results.push(...data);
     if (data.length < limit) break;
+    if (page === maxPages) {
+      const label = resourceLabel ? ` for ${resourceLabel}` : "";
+      core.warning(
+        `Pagination limit reached${label}: fetched ${results.length} items across ${maxPages} pages ` +
+          `(limit=${limit}). Results may be incomplete. ` +
+          `Set GITEA_PAGINATION_MAX_PAGES or GITEA_PAGINATION_LIMIT env vars to increase limits.`,
+      );
+    }
   }
   return results;
 }
@@ -250,19 +260,27 @@ export async function fetchGiteaData({
     );
     contextData = pr;
 
-    const files = await paginate<GiteaChangedFile>((page, limit) =>
-      client.get(`/repos/${owner}/${repo}/pulls/${prNumber}/files`, {
-        page,
-        limit,
-      }),
+    const files = await paginate<GiteaChangedFile>(
+      (page, limit) =>
+        client.get(`/repos/${owner}/${repo}/pulls/${prNumber}/files`, {
+          page,
+          limit,
+        }),
+      DEFAULT_PAGE_LIMIT,
+      DEFAULT_MAX_PAGES,
+      `PR #${prNumber} changed files`,
     );
     changedFiles = files || [];
 
-    const issueComments = await paginate<GiteaComment>((page, limit) =>
-      client.get(`/repos/${owner}/${repo}/issues/${prNumber}/comments`, {
-        page,
-        limit,
-      }),
+    const issueComments = await paginate<GiteaComment>(
+      (page, limit) =>
+        client.get(`/repos/${owner}/${repo}/issues/${prNumber}/comments`, {
+          page,
+          limit,
+        }),
+      DEFAULT_PAGE_LIMIT,
+      DEFAULT_MAX_PAGES,
+      `PR #${prNumber} comments`,
     );
 
     comments = filterCommentsByActor(
@@ -271,11 +289,15 @@ export async function fetchGiteaData({
       excludeCommentsByActor,
     );
 
-    const reviews = await paginate<GiteaPullReview>((page, limit) =>
-      client.get(`/repos/${owner}/${repo}/pulls/${prNumber}/reviews`, {
-        page,
-        limit,
-      }),
+    const reviews = await paginate<GiteaPullReview>(
+      (page, limit) =>
+        client.get(`/repos/${owner}/${repo}/pulls/${prNumber}/reviews`, {
+          page,
+          limit,
+        }),
+      DEFAULT_PAGE_LIMIT,
+      DEFAULT_MAX_PAGES,
+      `PR #${prNumber} reviews`,
     );
 
     const reviewWithComments: GiteaReviewWithComments[] = [];
@@ -286,6 +308,9 @@ export async function fetchGiteaData({
             `/repos/${owner}/${repo}/pulls/${prNumber}/reviews/${review.id}/comments`,
             { page, limit },
           ),
+        DEFAULT_PAGE_LIMIT,
+        DEFAULT_MAX_PAGES,
+        `review #${review.id} comments`,
       );
       reviewWithComments.push({
         ...review,
@@ -299,11 +324,15 @@ export async function fetchGiteaData({
     );
     contextData = issue;
 
-    const issueComments = await paginate<GiteaComment>((page, limit) =>
-      client.get(`/repos/${owner}/${repo}/issues/${prNumber}/comments`, {
-        page,
-        limit,
-      }),
+    const issueComments = await paginate<GiteaComment>(
+      (page, limit) =>
+        client.get(`/repos/${owner}/${repo}/issues/${prNumber}/comments`, {
+          page,
+          limit,
+        }),
+      DEFAULT_PAGE_LIMIT,
+      DEFAULT_MAX_PAGES,
+      `issue #${prNumber} comments`,
     );
 
     comments = filterCommentsByActor(

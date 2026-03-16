@@ -15,9 +15,10 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
   const {
     inputs: { assigneeTrigger, labelTrigger, triggerPhrase, prompt },
   } = context;
+  const normalizedTriggerPhrase = triggerPhrase.trim();
 
   if (prompt) {
-    console.log("Prompt provided, triggering action");
+    core.info("Prompt provided, triggering action");
     return true;
   }
 
@@ -26,7 +27,7 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
     const assigneeUsername =
       (context.payload as any).issue?.assignee?.login || "";
     if (triggerUser && assigneeUsername === triggerUser) {
-      console.log(`Issue assigned to trigger user '${triggerUser}'`);
+      core.info(`Issue assigned to trigger user '${triggerUser}'`);
       return true;
     }
   }
@@ -34,72 +35,95 @@ export function checkContainsTrigger(context: ParsedGiteaContext): boolean {
   if (isIssuesEvent(context) && context.eventAction === "labeled") {
     const labelName = (context.payload as any).label?.name || "";
     if (labelTrigger && labelName === labelTrigger) {
-      console.log(`Issue labeled with trigger label '${labelTrigger}'`);
+      core.info(`Issue labeled with trigger label '${labelTrigger}'`);
       return true;
     }
   }
 
-  if (isIssuesEvent(context) && context.eventAction === "opened") {
+  if (
+    isIssuesEvent(context) &&
+    context.eventAction === "opened" &&
+    normalizedTriggerPhrase
+  ) {
     const issueBody = (context.payload as any).issue?.body || "";
     const issueTitle = (context.payload as any).issue?.title || "";
     const regex = new RegExp(
-      `(^|\\s)${escapeRegExp(triggerPhrase)}([\\s.,!?;:]|$)`,
+      `(^|\\s)${escapeRegExp(normalizedTriggerPhrase)}([\\s.,!?;:]|$)`,
     );
     if (regex.test(issueBody)) {
-      console.log(`Issue body contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(
+        `Issue body contains exact trigger phrase '${normalizedTriggerPhrase}'`,
+      );
       return true;
     }
     if (regex.test(issueTitle)) {
-      console.log(`Issue title contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(
+        `Issue title contains exact trigger phrase '${normalizedTriggerPhrase}'`,
+      );
       return true;
     }
   }
 
-  if (isPullRequestEvent(context)) {
+  if (isPullRequestEvent(context) && normalizedTriggerPhrase) {
     const prBody = (context.payload as any).pull_request?.body || "";
     const prTitle = (context.payload as any).pull_request?.title || "";
     const regex = new RegExp(
-      `(^|\\s)${escapeRegExp(triggerPhrase)}([\\s.,!?;:]|$)`,
+      `(^|\\s)${escapeRegExp(normalizedTriggerPhrase)}([\\s.,!?;:]|$)`,
     );
     if (regex.test(prBody)) {
-      console.log(`Pull request body contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(
+        `Pull request body contains exact trigger phrase '${normalizedTriggerPhrase}'`,
+      );
       return true;
     }
     if (regex.test(prTitle)) {
-      console.log(`Pull request title contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(
+        `Pull request title contains exact trigger phrase '${normalizedTriggerPhrase}'`,
+      );
       return true;
     }
   }
 
-  if (isPullRequestReviewEvent(context)) {
+  if (isPullRequestReviewEvent(context) && normalizedTriggerPhrase) {
     const reviewBody =
       (context.payload as any).review?.body ||
       (context.payload as any).review?.content ||
       "";
     const regex = new RegExp(
-      `(^|\\s)${escapeRegExp(triggerPhrase)}([\\s.,!?;:]|$)`,
+      `(^|\\s)${escapeRegExp(normalizedTriggerPhrase)}([\\s.,!?;:]|$)`,
     );
     if (regex.test(reviewBody)) {
-      console.log(`Pull request review contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(
+        `Pull request review contains exact trigger phrase '${normalizedTriggerPhrase}'`,
+      );
       return true;
     }
   }
 
-  if (isIssueCommentEvent(context) || isPullRequestReviewCommentEvent(context)) {
+  if (
+    (isIssueCommentEvent(context) || isPullRequestReviewCommentEvent(context)) &&
+    normalizedTriggerPhrase
+  ) {
     const commentBody =
       (context.payload as any).comment?.body ||
       (context.payload as any).review?.content ||
       "";
     const regex = new RegExp(
-      `(^|\\s)${escapeRegExp(triggerPhrase)}([\\s.,!?;:]|$)`,
+      `(^|\\s)${escapeRegExp(normalizedTriggerPhrase)}([\\s.,!?;:]|$)`,
     );
     if (regex.test(commentBody)) {
-      console.log(`Comment contains exact trigger phrase '${triggerPhrase}'`);
+      core.info(
+        `Comment contains exact trigger phrase '${normalizedTriggerPhrase}'`,
+      );
       return true;
     }
   }
 
-  console.log(`No trigger was met for ${triggerPhrase}`);
+  if (!normalizedTriggerPhrase) {
+    core.info("No trigger phrase configured; comment/body triggers are disabled");
+  } else {
+    core.info(`No trigger was met for ${normalizedTriggerPhrase}`);
+  }
   return false;
 }
 
