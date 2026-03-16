@@ -8,7 +8,6 @@ export const ActionInputsSchema = z.object({
   prompt: z.string(),
   triggerPhrase: z
     .string()
-    .min(1, "trigger_phrase must not be empty")
     .max(100, "trigger_phrase must be 100 characters or fewer"),
   assigneeTrigger: z.string(),
   labelTrigger: z.string(),

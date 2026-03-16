@@ -33,10 +33,10 @@ describe("validateActionInputs", () => {
     expect(result.useStickyComment).toBe(false);
   });
 
-  test("rejects empty trigger_phrase", () => {
+  test("allows empty trigger_phrase", () => {
     expect(() =>
       validateActionInputs({ ...validInputs, triggerPhrase: "" }),
-    ).toThrow("trigger_phrase must not be empty");
+    ).not.toThrow();
   });
 
   test("rejects trigger_phrase exceeding 100 chars", () => {

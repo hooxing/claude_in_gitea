@@ -98,7 +98,7 @@ Key inputs (full list in [`action.yml`](action.yml)):
 |-------|---------|-------------|
 | `gitea_token` | | Gitea token (required) |
 | `anthropic_api_key` | | Anthropic API key |
-| `trigger_phrase` | `@claude` | Phrase that triggers the action |
+| `trigger_phrase` | `@claude` | Phrase that triggers the action (empty disables comment/body triggers) |
 | `prompt` | | Fixed prompt for auto-review mode |
 | `track_progress` | `false` | Enable progress-tracking comment |
 | `use_sticky_comment` | `false` | Reuse the same status comment |
